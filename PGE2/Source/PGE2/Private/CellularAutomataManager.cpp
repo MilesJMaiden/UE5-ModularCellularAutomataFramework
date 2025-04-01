@@ -32,27 +32,28 @@ void ACellularAutomataManager::Tick(float DeltaTime)
 
 void ACellularAutomataManager::InitializeGrid()
 {
-    // Create a grid with all dead cells.
+    // Create a grid with all dead cells using a one-dimensional array.
+    int32 TotalCells = GridWidth * GridHeight;
     CellGrid.Empty();
-    for (int32 i = 0; i < GridHeight; i++)
+    CellGrid.SetNum(TotalCells);
+
+    for (int32 y = 0; y < GridHeight; y++)
     {
-        TArray<int32> Row;
-        for (int32 j = 0; j < GridWidth; j++)
+        for (int32 x = 0; x < GridWidth; x++)
         {
-            Row.Add(0);
-            // Spawn a visual representation for each grid cell.
-            SpawnCell(j, i, false);
+            int32 Index = y * GridWidth + x;
+            CellGrid[Index] = 0;
+            // Spawn a visual cell at (x, y).
+            SpawnCell(x, y, false);
         }
-        CellGrid.Add(Row);
     }
 }
 
 void ACellularAutomataManager::UpdateSimulation()
 {
-    // Create a temporary grid (double-buffer) for state update.
-    TArray<TArray<int32>> NewGrid = CellGrid;
+    TArray<int32> NewGrid = CellGrid;
 
-    auto GetLiveNeighborCount = [&](int32 X, int32 Y) -> int32
+    auto GetLiveNeighborCount = [this](int32 X, int32 Y) -> int32
         {
             int32 Count = 0;
             for (int32 OffsetY = -1; OffsetY <= 1; OffsetY++)
@@ -65,34 +66,35 @@ void ACellularAutomataManager::UpdateSimulation()
                     int32 NeighborY = Y + OffsetY;
                     if (NeighborX >= 0 && NeighborX < GridWidth && NeighborY >= 0 && NeighborY < GridHeight)
                     {
-                        Count += CellGrid[NeighborY][NeighborX];
+                        int32 Index = NeighborY * GridWidth + NeighborX;
+                        Count += CellGrid[Index];
                     }
                 }
             }
             return Count;
         };
 
-    // Apply Conway's Game of Life rules.
-    for (int32 Y = 0; Y < GridHeight; Y++)
+    for (int32 y = 0; y < GridHeight; y++)
     {
-        for (int32 X = 0; X < GridWidth; X++)
+        for (int32 x = 0; x < GridWidth; x++)
         {
-            int32 LiveNeighbors = GetLiveNeighborCount(X, Y);
-            if (CellGrid[Y][X] == 1)
+            int32 Index = y * GridWidth + x;
+            int32 LiveNeighbors = GetLiveNeighborCount(x, y);
+            if (CellGrid[Index] == 1)
             {
                 if (LiveNeighbors < 2 || LiveNeighbors > 3)
-                    NewGrid[Y][X] = 0;
+                    NewGrid[Index] = 0;
             }
             else
             {
                 if (LiveNeighbors == 3)
-                    NewGrid[Y][X] = 1;
+                    NewGrid[Index] = 1;
             }
         }
     }
 
     CellGrid = NewGrid;
-    // Optionally, update visual representations based on new states.
+    // (Optional) Update visual representations here.
 }
 
 void ACellularAutomataManager::ApplyPattern(TSubclassOf<ACellPatternBase> PatternClass, FVector Origin)
@@ -109,16 +111,14 @@ void ACellularAutomataManager::ApplyPattern(TSubclassOf<ACellPatternBase> Patter
 
 void ACellularAutomataManager::SpawnCell(int32 X, int32 Y, bool bIsAlive)
 {
-    // Convert grid coordinates to world location (assuming 100 unit spacing).
+    // Convert grid coordinates to a world location (using 100 unit spacing).
     FVector Location = GetActorLocation() + FVector(X * 100.0f, Y * 100.0f, 0.0f);
     FTransform Transform;
     Transform.SetLocation(Location);
 
-    // Spawn a StaticMeshActor to represent the cell.
     AStaticMeshActor* CellActor = GetWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Transform);
     if (CellActor && CellMesh)
     {
         CellActor->GetStaticMeshComponent()->SetStaticMesh(CellMesh);
-        // Optionally, set materials or collision settings.
     }
 }

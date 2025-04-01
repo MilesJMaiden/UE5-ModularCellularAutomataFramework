@@ -4,10 +4,6 @@
 #include "GameFramework/Actor.h"
 #include "CellPatternBase.generated.h"
 
-/**
- * Abstract base class for cellular automata patterns.
- * Extend this class to create custom patterns such as Still Lifes, Oscillators, and Spaceships.
- */
 UCLASS(Abstract, Blueprintable)
 class PGE2_API ACellPatternBase : public AActor
 {

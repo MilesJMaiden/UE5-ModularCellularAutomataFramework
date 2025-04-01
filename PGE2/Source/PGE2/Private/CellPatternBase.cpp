@@ -8,6 +8,4 @@ ACellPatternBase::ACellPatternBase()
 
 void ACellPatternBase::ApplyPattern_Implementation(ACellularAutomataManager* Manager)
 {
-    // Base implementation does nothing.
-    // Derived classes will override this to apply specific patterns.
 }

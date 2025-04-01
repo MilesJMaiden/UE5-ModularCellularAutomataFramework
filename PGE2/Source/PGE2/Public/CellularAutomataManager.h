@@ -15,26 +15,26 @@ public:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;
 
-    // Grid dimensions for the cellular automata
+    // Grid dimensions for the cellular automata.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
     int32 GridWidth;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
     int32 GridHeight;
 
-    // Time between simulation steps
+    // Time between simulation steps.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
     float TimeStepInterval;
 
-    // Mesh used to visualize each cell (assign a Cube mesh in the editor)
+    // Mesh used to visualize each cell (assign a Cube mesh in the editor).
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
     UStaticMesh* CellMesh;
 
-    // Initializes the grid with all dead cells
+    // Initializes the grid with all dead cells.
     UFUNCTION(BlueprintCallable, Category = "Cellular Automata")
     void InitializeGrid();
 
-    // Updates the simulation state (using Game of Life rules)
+    // Updates the simulation state (using Game of Life rules).
     UFUNCTION(BlueprintCallable, Category = "Cellular Automata")
     void UpdateSimulation();
 
@@ -42,9 +42,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Cellular Automata")
     void ApplyPattern(TSubclassOf<class ACellPatternBase> PatternClass, FVector Origin);
 
-    // The grid storing the cell states (0 = dead, 1 = alive)
+    // The grid storing the cell states (0 = dead, 1 = alive) as a one-dimensional array.
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
-    TArray<TArray<int32>> CellGrid;
+    TArray<int32> CellGrid;
 
 protected:
     float TimeAccumulator;

@@ -4,9 +4,6 @@
 #include "CellPatternBase.h"
 #include "SpaceshipPattern.generated.h"
 
-/**
- * Represents a Spaceship pattern (e.g., a glider).
- */
 UCLASS(Blueprintable)
 class PGE2_API ASpaceshipPattern : public ACellPatternBase
 {
@@ -15,6 +12,5 @@ class PGE2_API ASpaceshipPattern : public ACellPatternBase
 public:
     ASpaceshipPattern();
 
-    // Override to apply a Spaceship pattern.
     virtual void ApplyPattern_Implementation(ACellularAutomataManager* Manager) override;
 };

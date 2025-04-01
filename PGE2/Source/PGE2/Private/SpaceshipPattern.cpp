@@ -10,12 +10,10 @@ void ASpaceshipPattern::ApplyPattern_Implementation(ACellularAutomataManager* Ma
     if (!Manager)
         return;
 
-    // Example: Create a glider pattern.
     FVector Origin = GetActorLocation();
     int32 GridX = FMath::RoundToInt((Origin.X - Manager->GetActorLocation().X) / 100.0f);
     int32 GridY = FMath::RoundToInt((Origin.Y - Manager->GetActorLocation().Y) / 100.0f);
 
-    // Offsets for a basic glider pattern.
     TArray<FIntPoint> Offsets = {
         FIntPoint(1, 0),
         FIntPoint(2, 1),
@@ -28,9 +26,10 @@ void ASpaceshipPattern::ApplyPattern_Implementation(ACellularAutomataManager* Ma
     {
         int32 PosX = GridX + Offset.X;
         int32 PosY = GridY + Offset.Y;
-        if (Manager->CellGrid.IsValidIndex(PosY) && Manager->CellGrid[PosY].IsValidIndex(PosX))
+        if (PosX >= 0 && PosX < Manager->GridWidth && PosY >= 0 && PosY < Manager->GridHeight)
         {
-            Manager->CellGrid[PosY][PosX] = 1;
+            int32 Index = PosY * Manager->GridWidth + PosX;
+            Manager->CellGrid[Index] = 1;
         }
     }
 }

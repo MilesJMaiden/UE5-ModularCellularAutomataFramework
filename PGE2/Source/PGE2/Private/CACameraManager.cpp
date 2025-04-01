@@ -21,7 +21,6 @@ void ACACameraManager::BeginPlay()
 void ACACameraManager::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
-    // Optionally, bind input here or handle additional logic via Blueprints.
 }
 
 void ACACameraManager::MoveCamera(FVector Direction, float DeltaTime)
@@ -31,7 +30,6 @@ void ACACameraManager::MoveCamera(FVector Direction, float DeltaTime)
 
 void ACACameraManager::ZoomCamera(float AxisValue, float DeltaTime)
 {
-    // Move the camera along its forward vector for zooming.
     FVector ZoomMovement = CameraComponent->GetForwardVector() * AxisValue * ZoomSpeed * DeltaTime;
     AddActorWorldOffset(ZoomMovement, true);
 }
