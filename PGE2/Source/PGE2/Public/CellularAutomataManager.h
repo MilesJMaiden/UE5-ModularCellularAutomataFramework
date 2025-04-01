@@ -30,11 +30,15 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
     UStaticMesh* CellMesh;
 
+    // Base material to create dynamic material instances for each cell.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
+    UMaterialInterface* BaseCellMaterial;
+
     // Initializes the grid with all dead cells.
     UFUNCTION(BlueprintCallable, Category = "Cellular Automata")
     void InitializeGrid();
 
-    // Updates the simulation state (using Game of Life rules).
+    // Updates the simulation state (using Game of Life rules) and refreshes dynamic materials.
     UFUNCTION(BlueprintCallable, Category = "Cellular Automata")
     void UpdateSimulation();
 
@@ -46,9 +50,16 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
     TArray<int32> CellGrid;
 
+    // References to the spawned cell actors (indexed in the same order as CellGrid).
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
+    TArray<class AStaticMeshActor*> CellActors;
+
 protected:
     float TimeAccumulator;
 
     // Helper function to spawn a visual cell at the grid coordinates.
     void SpawnCell(int32 X, int32 Y, bool bIsAlive);
+
+    // Helper to compute live neighbor count for a given cell coordinate.
+    int32 GetLiveNeighborCountForCell(int32 X, int32 Y) const;
 };
