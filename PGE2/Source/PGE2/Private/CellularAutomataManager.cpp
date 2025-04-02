@@ -2,7 +2,7 @@
 #include "CellPatternBase.h"
 #include "Engine/World.h"
 #include "Engine/StaticMeshActor.h"
-#include "Materials/MaterialInstanceDynamic.h"
+#include "Components/StaticMeshComponent.h"
 
 ACellularAutomataManager::ACellularAutomataManager()
 {
@@ -17,12 +17,23 @@ void ACellularAutomataManager::BeginPlay()
 {
     Super::BeginPlay();
     InitializeGrid();
+
+    // Automatically spawn pattern actors based on the PatternSpawnInfos array.
+    for (const FPatternSpawnInfo& Info : PatternSpawnInfos)
+    {
+        for (int32 i = 0; i < Info.InstanceCount; i++)
+        {
+            int32 RandX = FMath::RandRange(0, GridWidth - 1);
+            int32 RandY = FMath::RandRange(0, GridHeight - 1);
+            FVector PatternOrigin = GetActorLocation() + FVector(RandX * 100.0f, RandY * 100.0f, 0.0f);
+            ApplyPattern(Info.PatternClass, PatternOrigin);
+        }
+    }
 }
 
 void ACellularAutomataManager::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
-
     TimeAccumulator += DeltaTime;
     if (TimeAccumulator >= TimeStepInterval)
     {
@@ -33,14 +44,15 @@ void ACellularAutomataManager::Tick(float DeltaTime)
 
 void ACellularAutomataManager::InitializeGrid()
 {
-    // Create a grid with all dead cells using a one-dimensional array.
     int32 TotalCells = GridWidth * GridHeight;
     CellGrid.Empty();
     CellGrid.SetNum(TotalCells);
 
-    // Clear previous cell actors, if any.
     CellActors.Empty();
     CellActors.SetNum(TotalCells);
+
+    CellMeshOverrides.Empty();
+    CellMeshOverrides.Init(nullptr, TotalCells);
 
     for (int32 y = 0; y < GridHeight; y++)
     {
@@ -48,7 +60,6 @@ void ACellularAutomataManager::InitializeGrid()
         {
             int32 Index = y * GridWidth + x;
             CellGrid[Index] = 0;
-            // Spawn a visual cell at (x, y) and store its reference.
             SpawnCell(x, y, false);
         }
     }
@@ -77,10 +88,8 @@ int32 ACellularAutomataManager::GetLiveNeighborCountForCell(int32 X, int32 Y) co
 
 void ACellularAutomataManager::UpdateSimulation()
 {
-    // Create a temporary copy of the grid.
+    // 1. Apply Conway's Game of Life rules
     TArray<int32> NewGrid = CellGrid;
-
-    // Update the simulation state using Conway's Game of Life rules.
     for (int32 y = 0; y < GridHeight; y++)
     {
         for (int32 x = 0; x < GridWidth; x++)
@@ -99,30 +108,47 @@ void ACellularAutomataManager::UpdateSimulation()
             }
         }
     }
-
-    // Update the simulation grid.
     CellGrid = NewGrid;
 
-    // Update the dynamic material parameters for each cell.
-    for (int32 y = 0; y < GridHeight; y++)
+    // 2. Update mesh overrides: apply pattern mesh to every alive tile, if it belongs to that pattern
+    for (int32 i = 0; i < CellGrid.Num(); i++)
     {
-        for (int32 x = 0; x < GridWidth; x++)
-        {
-            int32 Index = y * GridWidth + x;
-            if (CellActors.IsValidIndex(Index) && CellActors[Index])
-            {
-                // Get the dynamic material instance from the cell's StaticMeshComponent.
-                UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(CellActors[Index]->GetStaticMeshComponent()->GetMaterial(0));
-                if (DynMat)
-                {
-                    // Set a parameter (e.g., "LifeState") to indicate whether the cell is alive (1.0) or dead (0.0).
-                    DynMat->SetScalarParameterValue(FName("LifeState"), CellGrid[Index] == 1 ? 1.0f : 0.0f);
+        if (!CellActors.IsValidIndex(i) || !CellActors[i]) continue;
 
-                    // Also update a parameter for the neighbor count.
-                    int32 LiveNeighbors = GetLiveNeighborCountForCell(x, y);
-                    DynMat->SetScalarParameterValue(FName("NeighborCount"), (float)LiveNeighbors);
+        AStaticMeshActor* Actor = CellActors[i];
+        UStaticMesh* MeshToUse = nullptr;
+
+        if (CellGrid[i] == 1) // ALIVE TILE
+        {
+            int32 GridX = i % GridWidth;
+            int32 GridY = i / GridWidth;
+
+            for (ACellPatternBase* Pattern : ActivePatternActors)
+            {
+                if (!Pattern || !Pattern->PatternMesh) continue;
+
+                TArray<int32> AffectedIndices = Pattern->GetAffectedIndices(this);
+                if (AffectedIndices.Contains(i))
+                {
+                    MeshToUse = Pattern->PatternMesh;
+                    break; // First matching pattern wins
                 }
             }
+
+            // Fallback to default mesh if no pattern owns it
+            if (!MeshToUse && CellMesh)
+            {
+                MeshToUse = CellMesh;
+            }
+
+            // Show and set mesh
+            Actor->SetActorHiddenInGame(false);
+            Actor->GetStaticMeshComponent()->SetStaticMesh(MeshToUse);
+        }
+        else // DEAD TILE
+        {
+            Actor->SetActorHiddenInGame(true);
+            Actor->GetStaticMeshComponent()->SetStaticMesh(nullptr);
         }
     }
 }
@@ -135,38 +161,26 @@ void ACellularAutomataManager::ApplyPattern(TSubclassOf<ACellPatternBase> Patter
         if (Pattern)
         {
             Pattern->ApplyPattern(this);
+            ActivePatternActors.Add(Pattern);
         }
     }
 }
 
 void ACellularAutomataManager::SpawnCell(int32 X, int32 Y, bool bIsAlive)
 {
-    // Convert grid coordinates to a world location (using 100 unit spacing).
     FVector Location = GetActorLocation() + FVector(X * 100.0f, Y * 100.0f, 0.0f);
     FTransform Transform;
     Transform.SetLocation(Location);
 
-    // Spawn a StaticMeshActor to represent the cell.
     AStaticMeshActor* CellActor = GetWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Transform);
     if (CellActor && CellMesh)
     {
+        CellActor->SetActorHiddenInGame(false);
+        CellActor->GetStaticMeshComponent()->SetVisibility(true);
         CellActor->GetStaticMeshComponent()->SetStaticMesh(CellMesh);
-
-        // Create a dynamic material instance based on the BaseCellMaterial (if assigned).
-        if (BaseCellMaterial)
-        {
-            UMaterialInstanceDynamic* DynMat = UMaterialInstanceDynamic::Create(BaseCellMaterial, this);
-            if (DynMat)
-            {
-                // Optionally initialize parameters.
-                DynMat->SetScalarParameterValue(FName("LifeState"), 0.0f);
-                DynMat->SetScalarParameterValue(FName("NeighborCount"), 0.0f);
-                CellActor->GetStaticMeshComponent()->SetMaterial(0, DynMat);
-            }
-        }
+        CellActor->GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);
     }
 
-    // Store the spawned actor reference in the same order as the grid.
     int32 Index = Y * GridWidth + X;
     if (CellActors.IsValidIndex(Index))
     {

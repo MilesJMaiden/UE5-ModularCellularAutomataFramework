@@ -4,6 +4,9 @@
 #include "CellPatternBase.h"
 #include "StillLifePattern.generated.h"
 
+/**
+ * Represents a Still Life pattern (e.g., a 2x2 block).
+ */
 UCLASS(Blueprintable)
 class PGE2_API AStillLifePattern : public ACellPatternBase
 {
@@ -11,10 +14,6 @@ class PGE2_API AStillLifePattern : public ACellPatternBase
 
 public:
     AStillLifePattern();
-
-    // Optional custom mesh for cells in this pattern (for example, a Sphere from BasicShapes).
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cell Pattern")
-    UStaticMesh* CustomCellMesh;
 
     virtual void ApplyPattern_Implementation(ACellularAutomataManager* Manager) override;
 };

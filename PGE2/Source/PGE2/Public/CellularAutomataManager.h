@@ -2,7 +2,26 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Engine/StaticMeshActor.h" // Full definition for AStaticMeshActor
 #include "CellularAutomataManager.generated.h"
+
+/**
+ * Structure to hold pattern spawning settings.
+ * Specify the pattern class and the total number of instances to spawn.
+ */
+USTRUCT(BlueprintType)
+struct FPatternSpawnInfo
+{
+    GENERATED_BODY()
+
+    // The pattern blueprint (or C++ class) to spawn.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern")
+    TSubclassOf<class ACellPatternBase> PatternClass;
+
+    // Total number of instances to spawn randomly on the grid.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pattern")
+    int32 InstanceCount;
+};
 
 UCLASS(Blueprintable)
 class PGE2_API ACellularAutomataManager : public AActor
@@ -15,7 +34,7 @@ public:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;
 
-    // Grid dimensions for the cellular automata.
+    // Grid dimensions.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
     int32 GridWidth;
 
@@ -26,11 +45,11 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
     float TimeStepInterval;
 
-    // Mesh used to visualize each cell (assign a Cube mesh in the editor).
+    // Default mesh for an alive cell.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
     UStaticMesh* CellMesh;
 
-    // Base material to create dynamic material instances for each cell.
+    // (Optional) Base material for cell actors.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
     UMaterialInterface* BaseCellMaterial;
 
@@ -38,28 +57,40 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Cellular Automata")
     void InitializeGrid();
 
-    // Updates the simulation state (using Game of Life rules) and refreshes dynamic materials.
+    // Updates the simulation state and then updates cell visuals.
     UFUNCTION(BlueprintCallable, Category = "Cellular Automata")
     void UpdateSimulation();
 
-    // Applies a pattern (Still Life, Oscillator, or Spaceship) at a specified origin.
+    // Spawns a pattern actor at a specified origin.
     UFUNCTION(BlueprintCallable, Category = "Cellular Automata")
     void ApplyPattern(TSubclassOf<class ACellPatternBase> PatternClass, FVector Origin);
 
-    // The grid storing the cell states (0 = dead, 1 = alive) as a one-dimensional array.
+    // The grid state (0 = dead, 1 = alive) stored as a 1D array.
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
     TArray<int32> CellGrid;
 
-    // References to the spawned cell actors (indexed in the same order as CellGrid).
+    // References to spawned cell actors (ordered to match the grid).
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
-    TArray<class AStaticMeshActor*> CellActors;
+    TArray<AStaticMeshActor*> CellActors;
+
+    // For each grid cell, an override mesh (if a pattern seeded it).
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
+    TArray<UStaticMesh*> CellMeshOverrides;
+
+    // Array of pattern spawn infos to automatically seed the grid.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata|Patterns")
+    TArray<FPatternSpawnInfo> PatternSpawnInfos;
+
+    // Tracks active pattern actors.
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
+    TArray<class ACellPatternBase*> ActivePatternActors;
 
 protected:
     float TimeAccumulator;
 
-    // Helper function to spawn a visual cell at the grid coordinates.
+    // Helper: spawn a cell actor at grid coordinates (X, Y).
     void SpawnCell(int32 X, int32 Y, bool bIsAlive);
 
-    // Helper to compute live neighbor count for a given cell coordinate.
+    // Helper: count live neighbors for a given cell.
     int32 GetLiveNeighborCountForCell(int32 X, int32 Y) const;
 };

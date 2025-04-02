@@ -3,6 +3,7 @@
 
 AStillLifePattern::AStillLifePattern()
 {
+    // Assign PatternMesh via the editor
 }
 
 void AStillLifePattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager)
@@ -10,29 +11,27 @@ void AStillLifePattern::ApplyPattern_Implementation(ACellularAutomataManager* Ma
     if (!Manager)
         return;
 
-    FVector Origin = GetActorLocation();
-    int32 GridX = FMath::RoundToInt((Origin.X - Manager->GetActorLocation().X) / 100.0f);
-    int32 GridY = FMath::RoundToInt((Origin.Y - Manager->GetActorLocation().Y) / 100.0f);
+    if (PatternMesh)
+    {
+        MeshComponent->SetStaticMesh(PatternMesh);
+    }
 
-    // Set a 2x2 block.
-    if (GridX >= 0 && GridX < Manager->GridWidth && GridY >= 0 && GridY < Manager->GridHeight)
+    // Define a 2x2 block: (0,0), (1,0), (0,1), (1,1)
+    TArray<FIntPoint> LocalOffsets;
+    LocalOffsets.Add(FIntPoint(0, 0));
+    LocalOffsets.Add(FIntPoint(1, 0));
+    LocalOffsets.Add(FIntPoint(0, 1));
+    LocalOffsets.Add(FIntPoint(1, 1));
+
+    // Populate SeededIndices
+    ComputeSeededIndicesFromOffsets(Manager, LocalOffsets);
+
+    // Activate those cells in the manager's grid
+    for (int32 Idx : SeededIndices)
     {
-        int32 Index = GridY * Manager->GridWidth + GridX;
-        Manager->CellGrid[Index] = 1;
-    }
-    if ((GridX + 1) >= 0 && (GridX + 1) < Manager->GridWidth && GridY >= 0 && GridY < Manager->GridHeight)
-    {
-        int32 Index = GridY * Manager->GridWidth + (GridX + 1);
-        Manager->CellGrid[Index] = 1;
-    }
-    if (GridX >= 0 && GridX < Manager->GridWidth && (GridY + 1) >= 0 && (GridY + 1) < Manager->GridHeight)
-    {
-        int32 Index = (GridY + 1) * Manager->GridWidth + GridX;
-        Manager->CellGrid[Index] = 1;
-    }
-    if ((GridX + 1) >= 0 && (GridX + 1) < Manager->GridWidth && (GridY + 1) >= 0 && (GridY + 1) < Manager->GridHeight)
-    {
-        int32 Index = (GridY + 1) * Manager->GridWidth + (GridX + 1);
-        Manager->CellGrid[Index] = 1;
+        if (Manager->CellGrid.IsValidIndex(Idx))
+        {
+            Manager->CellGrid[Idx] = 1;
+        }
     }
 }

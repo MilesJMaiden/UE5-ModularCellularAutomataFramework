@@ -4,6 +4,9 @@
 #include "CellPatternBase.h"
 #include "OscillatorPattern.generated.h"
 
+/**
+ * Represents an Oscillator pattern (e.g., a horizontal blinker).
+ */
 UCLASS(Blueprintable)
 class PGE2_API AOscillatorPattern : public ACellPatternBase
 {

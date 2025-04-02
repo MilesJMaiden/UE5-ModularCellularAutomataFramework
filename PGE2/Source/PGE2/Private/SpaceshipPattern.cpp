@@ -3,6 +3,7 @@
 
 ASpaceshipPattern::ASpaceshipPattern()
 {
+    // Assign a PatternMesh in the editor
 }
 
 void ASpaceshipPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager)
@@ -10,11 +11,13 @@ void ASpaceshipPattern::ApplyPattern_Implementation(ACellularAutomataManager* Ma
     if (!Manager)
         return;
 
-    FVector Origin = GetActorLocation();
-    int32 GridX = FMath::RoundToInt((Origin.X - Manager->GetActorLocation().X) / 100.0f);
-    int32 GridY = FMath::RoundToInt((Origin.Y - Manager->GetActorLocation().Y) / 100.0f);
+    if (PatternMesh)
+    {
+        MeshComponent->SetStaticMesh(PatternMesh);
+    }
 
-    TArray<FIntPoint> Offsets = {
+    // Glider pattern offsets (e.g., moving diagonally)
+    TArray<FIntPoint> LocalOffsets = {
         FIntPoint(1, 0),
         FIntPoint(2, 1),
         FIntPoint(0, 2),
@@ -22,14 +25,15 @@ void ASpaceshipPattern::ApplyPattern_Implementation(ACellularAutomataManager* Ma
         FIntPoint(2, 2)
     };
 
-    for (const FIntPoint& Offset : Offsets)
+    // Cache the affected tile indices
+    ComputeSeededIndicesFromOffsets(Manager, LocalOffsets);
+
+    // Seed the grid with living cells at those indices
+    for (int32 Idx : SeededIndices)
     {
-        int32 PosX = GridX + Offset.X;
-        int32 PosY = GridY + Offset.Y;
-        if (PosX >= 0 && PosX < Manager->GridWidth && PosY >= 0 && PosY < Manager->GridHeight)
+        if (Manager->CellGrid.IsValidIndex(Idx))
         {
-            int32 Index = PosY * Manager->GridWidth + PosX;
-            Manager->CellGrid[Index] = 1;
+            Manager->CellGrid[Idx] = 1;
         }
     }
 }
