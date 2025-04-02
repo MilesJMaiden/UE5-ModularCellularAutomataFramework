@@ -3,6 +3,7 @@
 #include "Engine/World.h"
 #include "Engine/StaticMeshActor.h"
 #include "Components/StaticMeshComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 ACellularAutomataManager::ACellularAutomataManager()
 {
@@ -48,6 +49,14 @@ void ACellularAutomataManager::InitializeGrid()
     CellGrid.Empty();
     CellGrid.SetNum(TotalCells);
 
+    // Initialize CellIntensity to 0 (all cells start dead)
+    CellIntensity.Empty();
+    CellIntensity.SetNum(TotalCells);
+    for (int32 i = 0; i < TotalCells; i++)
+    {
+        CellIntensity[i] = 0.0f;
+    }
+
     CellActors.Empty();
     CellActors.SetNum(TotalCells);
 
@@ -88,7 +97,7 @@ int32 ACellularAutomataManager::GetLiveNeighborCountForCell(int32 X, int32 Y) co
 
 void ACellularAutomataManager::UpdateSimulation()
 {
-    // 1. Apply Conway's Game of Life rules
+    // 1. Update grid state using Conway's Game of Life rules.
     TArray<int32> NewGrid = CellGrid;
     for (int32 y = 0; y < GridHeight; y++)
     {
@@ -110,45 +119,77 @@ void ACellularAutomataManager::UpdateSimulation()
     }
     CellGrid = NewGrid;
 
-    // 2. Update mesh overrides: apply pattern mesh to every alive tile, if it belongs to that pattern
+    // 2. Update CellIntensity:
+    // For alive cells, intensity is reset to 1.0.
+    // For dead cells, intensity decays.
+    const float DecayFactor = 0.9f;
+    for (int32 i = 0; i < CellIntensity.Num(); i++)
+    {
+        if (CellGrid[i] == 1)
+        {
+            CellIntensity[i] = 1.0f;
+        }
+        else
+        {
+            CellIntensity[i] *= DecayFactor;
+            if (CellIntensity[i] < 0.05f)
+                CellIntensity[i] = 0.0f;
+        }
+    }
+
+    // 3. Update each cell actor's dynamic material parameters.
+    // This update only affects the BaseCellMaterial's "BaseColor" parameter.
+    // For each cell that is alive, we determine its owning pattern (via GetAffectedIndices) and apply its PatternColor.
+    // Dead cells are hidden (and can have opacity set to 0).
     for (int32 i = 0; i < CellGrid.Num(); i++)
     {
-        if (!CellActors.IsValidIndex(i) || !CellActors[i]) continue;
+        if (!CellActors.IsValidIndex(i) || !CellActors[i])
+            continue;
 
         AStaticMeshActor* Actor = CellActors[i];
-        UStaticMesh* MeshToUse = nullptr;
+        UStaticMeshComponent* MeshComp = Actor->GetStaticMeshComponent();
 
-        if (CellGrid[i] == 1) // ALIVE TILE
+        if (CellGrid[i] == 1)
         {
-            int32 GridX = i % GridWidth;
-            int32 GridY = i / GridWidth;
+            FLinearColor DesiredColor = FLinearColor::White; // default color
 
+            // Determine owning pattern by checking active patterns.
             for (ACellPatternBase* Pattern : ActivePatternActors)
             {
-                if (!Pattern || !Pattern->PatternMesh) continue;
-
+                if (!Pattern)
+                    continue;
                 TArray<int32> AffectedIndices = Pattern->GetAffectedIndices(this);
                 if (AffectedIndices.Contains(i))
                 {
-                    MeshToUse = Pattern->PatternMesh;
-                    break; // First matching pattern wins
+                    DesiredColor = Pattern->PatternColor;
+                    break;
                 }
             }
 
-            // Fallback to default mesh if no pattern owns it
-            if (!MeshToUse && CellMesh)
-            {
-                MeshToUse = CellMesh;
-            }
-
-            // Show and set mesh
             Actor->SetActorHiddenInGame(false);
-            Actor->GetStaticMeshComponent()->SetStaticMesh(MeshToUse);
+            // Get or create a dynamic material instance.
+            UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(MeshComp->GetMaterial(0));
+            if (!DynMat && BaseCellMaterial)
+            {
+                DynMat = UMaterialInstanceDynamic::Create(BaseCellMaterial, this);
+                MeshComp->SetMaterial(0, DynMat);
+            }
+            if (DynMat)
+            {
+                // Update the material's BaseColor and set full opacity (1.0) for alive cells.
+                DynMat->SetVectorParameterValue(FName("BaseColor"), DesiredColor);
+                DynMat->SetScalarParameterValue(FName("Opacity"), 1.0f);
+            }
         }
-        else // DEAD TILE
+        else
         {
+            // For dead cells, hide the actor and set opacity to 0.
             Actor->SetActorHiddenInGame(true);
-            Actor->GetStaticMeshComponent()->SetStaticMesh(nullptr);
+            UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(MeshComp->GetMaterial(0));
+            if (DynMat)
+            {
+                DynMat->SetScalarParameterValue(FName("Opacity"), 0.0f);
+            }
         }
     }
 }
@@ -179,8 +220,12 @@ void ACellularAutomataManager::SpawnCell(int32 X, int32 Y, bool bIsAlive)
         CellActor->GetStaticMeshComponent()->SetVisibility(true);
         CellActor->GetStaticMeshComponent()->SetStaticMesh(CellMesh);
         CellActor->GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);
+        if (BaseCellMaterial)
+        {
+            UMaterialInstanceDynamic* DynMat = UMaterialInstanceDynamic::Create(BaseCellMaterial, this);
+            CellActor->GetStaticMeshComponent()->SetMaterial(0, DynMat);
+        }
     }
-
     int32 Index = Y * GridWidth + X;
     if (CellActors.IsValidIndex(Index))
     {

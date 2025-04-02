@@ -18,23 +18,27 @@ class PGE2_API ACellPatternBase : public AActor
 public:
     ACellPatternBase();
 
-    // BlueprintNativeEvent for applying the pattern to the grid (to be overridden).
+    // BlueprintNativeEvent for applying the pattern to the grid (should be overridden by subclasses).
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Cell Pattern")
     void ApplyPattern(ACellularAutomataManager* Manager);
     virtual void ApplyPattern_Implementation(ACellularAutomataManager* Manager);
 
-    // Returns the grid indices that this pattern initially affected.
+    // Returns the grid indices that this pattern has seeded.
     virtual TArray<int32> GetAffectedIndices(const ACellularAutomataManager* Manager) const;
 
-    // Pattern mesh to apply to affected tiles.
+    // The pattern's specific 3D mesh (assigned in the editor).
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cell Pattern")
     UStaticMesh* PatternMesh;
 
-    // Optional override material.
+    // (Optional) Material for this pattern.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cell Pattern")
     UMaterialInterface* PatternMaterial;
 
-    // Visual mesh component (optional for in-world marker).
+    // The pattern's color (used to drive material parameters such as BaseColor).
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cell Pattern")
+    FLinearColor PatternColor;
+
+    // MeshComponent to display this pattern actor (if desired).
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cell Pattern")
     UStaticMeshComponent* MeshComponent;
 
@@ -43,6 +47,10 @@ protected:
     UPROPERTY()
     TArray<int32> SeededIndices;
 
-    // Utility for subclasses to populate SeededIndices from local offsets.
+    /**
+     * Utility for subclasses to populate SeededIndices from local offsets.
+     * The LocalOffsets array should contain the (x,y) offsets (in grid units)
+     * from the pattern's computed grid origin.
+     */
     void ComputeSeededIndicesFromOffsets(const ACellularAutomataManager* Manager, const TArray<FIntPoint>& LocalOffsets);
 };

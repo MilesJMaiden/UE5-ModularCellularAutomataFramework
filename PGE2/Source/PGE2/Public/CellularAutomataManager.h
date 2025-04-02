@@ -49,7 +49,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
     UStaticMesh* CellMesh;
 
-    // (Optional) Base material for cell actors.
+    // (Optional) Base material for cell actors (should use parameters "BaseColor" and "Opacity").
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
     UMaterialInterface* BaseCellMaterial;
 
@@ -84,6 +84,10 @@ public:
     // Tracks active pattern actors.
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
     TArray<class ACellPatternBase*> ActivePatternActors;
+
+    // New: Intensity for each cell (used to control opacity via dynamic material parameters).
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
+    TArray<float> CellIntensity;
 
 protected:
     float TimeAccumulator;
