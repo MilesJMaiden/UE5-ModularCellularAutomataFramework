@@ -38,6 +38,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cell Pattern")
     FLinearColor PatternColor;
 
+    // The fade time (in seconds) over which the opacity decays from 1 to 0.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cell Pattern")
+    float FadeTime;
+
     // MeshComponent to display this pattern actor (if desired).
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cell Pattern")
     UStaticMeshComponent* MeshComponent;
@@ -48,7 +52,7 @@ protected:
     TArray<int32> SeededIndices;
 
     /**
-     * Utility for subclasses to populate SeededIndices from local offsets.
+     * Utility for subclasses to populate SeededIndices from local (pattern) offsets.
      * The LocalOffsets array should contain the (x,y) offsets (in grid units)
      * from the pattern's computed grid origin.
      */

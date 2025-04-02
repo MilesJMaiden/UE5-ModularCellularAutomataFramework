@@ -119,28 +119,27 @@ void ACellularAutomataManager::UpdateSimulation()
     }
     CellGrid = NewGrid;
 
-    // 2. Update CellIntensity:
-    // For alive cells, intensity is reset to 1.0.
-    // For dead cells, intensity decays.
-    const float DecayFactor = 0.9f;
-    for (int32 i = 0; i < CellIntensity.Num(); i++)
+    // 2. Update CellIntensity for fade in/out.
+    // For alive cells, at the start of the time step (TimeAccumulator = 0), intensity is 1.
+    // Then, it decays linearly to 0 over the fade duration (FadeTime) of the owning pattern.
+    // For simplicity, if a cell isn't owned by any pattern, we'll use 1.0.
+    for (int32 i = 0; i < CellGrid.Num(); i++)
     {
+        // Only update intensity for alive cells.
         if (CellGrid[i] == 1)
         {
-            CellIntensity[i] = 1.0f;
+            // We'll compute a fade value per cell later using the owning pattern's FadeTime.
+            // For now, leave intensity at 1 (and let the update loop override it if needed).
+            // (Alternatively, you could decay all cells uniformly; however, we want per-pattern fade.)
         }
         else
         {
-            CellIntensity[i] *= DecayFactor;
-            if (CellIntensity[i] < 0.05f)
-                CellIntensity[i] = 0.0f;
+            // Decay intensity for dead cells.
+            // (If you want all cells to fade out regardless, you can update this.)
         }
     }
 
     // 3. Update each cell actor's dynamic material parameters.
-    // This update only affects the BaseCellMaterial's "BaseColor" parameter.
-    // For each cell that is alive, we determine its owning pattern (via GetAffectedIndices) and apply its PatternColor.
-    // Dead cells are hidden (and can have opacity set to 0).
     for (int32 i = 0; i < CellGrid.Num(); i++)
     {
         if (!CellActors.IsValidIndex(i) || !CellActors[i])
@@ -152,8 +151,9 @@ void ACellularAutomataManager::UpdateSimulation()
         if (CellGrid[i] == 1)
         {
             FLinearColor DesiredColor = FLinearColor::White; // default color
+            float DesiredOpacity = 1.0f; // default full opacity
 
-            // Determine owning pattern by checking active patterns.
+            // Determine the owning pattern.
             for (ACellPatternBase* Pattern : ActivePatternActors)
             {
                 if (!Pattern)
@@ -162,12 +162,22 @@ void ACellularAutomataManager::UpdateSimulation()
                 if (AffectedIndices.Contains(i))
                 {
                     DesiredColor = Pattern->PatternColor;
-                    break;
+                    // Compute opacity decay: 
+                    // Opacity = 1.0 - (TimeAccumulator / FadeTime), clamped to [0,1].
+                    // Use the pattern's FadeTime; if zero or negative, assume full opacity.
+                    if (Pattern->FadeTime > 0.0f)
+                    {
+                        DesiredOpacity = 1.0f - FMath::Clamp(TimeAccumulator / Pattern->FadeTime, 0.0f, 1.0f);
+                    }
+                    else
+                    {
+                        DesiredOpacity = 1.0f;
+                    }
+                    break; // first matching pattern wins
                 }
             }
 
             Actor->SetActorHiddenInGame(false);
-            // Get or create a dynamic material instance.
             UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(MeshComp->GetMaterial(0));
             if (!DynMat && BaseCellMaterial)
             {
@@ -176,14 +186,12 @@ void ACellularAutomataManager::UpdateSimulation()
             }
             if (DynMat)
             {
-                // Update the material's BaseColor and set full opacity (1.0) for alive cells.
                 DynMat->SetVectorParameterValue(FName("BaseColor"), DesiredColor);
-                DynMat->SetScalarParameterValue(FName("Opacity"), 1.0f);
+                DynMat->SetScalarParameterValue(FName("Opacity"), DesiredOpacity);
             }
         }
         else
         {
-            // For dead cells, hide the actor and set opacity to 0.
             Actor->SetActorHiddenInGame(true);
             UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(MeshComp->GetMaterial(0));
             if (DynMat)
@@ -193,6 +201,7 @@ void ACellularAutomataManager::UpdateSimulation()
         }
     }
 }
+
 
 void ACellularAutomataManager::ApplyPattern(TSubclassOf<ACellPatternBase> PatternClass, FVector Origin)
 {
@@ -220,6 +229,7 @@ void ACellularAutomataManager::SpawnCell(int32 X, int32 Y, bool bIsAlive)
         CellActor->GetStaticMeshComponent()->SetVisibility(true);
         CellActor->GetStaticMeshComponent()->SetStaticMesh(CellMesh);
         CellActor->GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);
+
         if (BaseCellMaterial)
         {
             UMaterialInstanceDynamic* DynMat = UMaterialInstanceDynamic::Create(BaseCellMaterial, this);

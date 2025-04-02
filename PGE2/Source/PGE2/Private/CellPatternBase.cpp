@@ -6,7 +6,6 @@ ACellPatternBase::ACellPatternBase()
 {
     PrimaryActorTick.bCanEverTick = false;
 
-    // Create the mesh component and set it as the RootComponent.
     MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
     RootComponent = MeshComponent;
 
@@ -14,12 +13,13 @@ ACellPatternBase::ACellPatternBase()
     PatternMaterial = nullptr;
     PatternColor = FLinearColor::White; // default color
 
-    // SeededIndices will be filled by subclasses.
+    // Set a default fade time (e.g., 0.5 seconds). You can override in blueprints.
+    FadeTime = 0.5f;
 }
 
 void ACellPatternBase::ApplyPattern_Implementation(ACellularAutomataManager* Manager)
 {
-    // Default implementation does nothing — subclasses must override this.
+    // Default implementation does nothing — subclasses should override.
 }
 
 TArray<int32> ACellPatternBase::GetAffectedIndices(const ACellularAutomataManager* Manager) const
@@ -37,10 +37,8 @@ void ACellPatternBase::ComputeSeededIndicesFromOffsets(const ACellularAutomataMa
     int32 GridX = FMath::FloorToInt((Origin.X - Manager->GetActorLocation().X) / 100.0f);
     int32 GridY = FMath::FloorToInt((Origin.Y - Manager->GetActorLocation().Y) / 100.0f);
 
-    // Clear any existing indices.
     SeededIndices.Empty();
 
-    // For each offset, compute the absolute grid index and add if valid.
     for (const FIntPoint& Offset : LocalOffsets)
     {
         int32 X = GridX + Offset.X;
