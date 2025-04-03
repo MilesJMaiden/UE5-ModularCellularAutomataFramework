@@ -11,7 +11,7 @@ ACellularAutomataManager::ACellularAutomataManager()
     GridWidth = 50;
     GridHeight = 50;
     TimeStepInterval = 0.5f;
-    DefaultFadeTime = 1.0f; // For example
+    DefaultFadeTime = 1.0f;
     TimeAccumulator = 0.0f;
     TimeInStep = 0.0f;
 }
@@ -43,26 +43,23 @@ void ACellularAutomataManager::Tick(float DeltaTime)
     // Update per-cell activation time.
     for (int32 i = 0; i < CellGrid.Num(); i++)
     {
-        // If the cell is alive, accumulate activation time.
         if (CellGrid[i] == 1)
         {
             CellActivationTime[i] += DeltaTime;
         }
         else
         {
-            // For dead cells, reset activation time.
             CellActivationTime[i] = 0.0f;
         }
     }
 
-    // When simulation update is triggered, update the simulation.
     if (TimeAccumulator >= TimeStepInterval)
     {
-        // Save the old state so that newly activated cells can be reset.
+        // Save old state for new activation checking.
         TArray<int32> OldGrid = CellGrid;
         UpdateSimulation();
         TimeAccumulator = 0.0f;
-        // For cells that have just become alive, reset activation time to 0.
+        // For cells that just became alive, reset activation time.
         for (int32 i = 0; i < CellGrid.Num(); i++)
         {
             if (CellGrid[i] == 1 && OldGrid[i] == 0)
@@ -70,11 +67,12 @@ void ACellularAutomataManager::Tick(float DeltaTime)
                 CellActivationTime[i] = 0.0f;
             }
         }
-        // Note: Do NOT reset TimeInStep, so that previous activation values continue to fade.
+        // Optionally, reset TimeInStep if you want the entire grid to reanimate synchronously.
+        // TimeInStep = 0.0f;
     }
     else
     {
-        // Additionally, update dynamic material opacity every frame for a smooth fade.
+        // Continuously update the opacity of each cell for a smooth fade.
         for (int32 i = 0; i < CellGrid.Num(); i++)
         {
             if (!CellActors.IsValidIndex(i) || !CellActors[i])
@@ -106,6 +104,28 @@ void ACellularAutomataManager::Tick(float DeltaTime)
             }
         }
     }
+
+    // In all cases, update the 3D mesh transforms for a creative effect.
+    // For each alive cell, we apply a pulsating scale and a slow rotation.
+    for (int32 i = 0; i < CellGrid.Num(); i++)
+    {
+        if (!CellActors.IsValidIndex(i) || !CellActors[i])
+            continue;
+        AStaticMeshActor* Actor = CellActors[i];
+        if (CellGrid[i] == 1)
+        {
+            // Compute a pulsating scale based on TimeInStep and a unique offset (using the cell index).
+            float ScaleFactor = 1.0f + 0.2f * FMath::Sin((TimeInStep + i * 0.1f) * PI * 2.0f / DefaultFadeTime);
+            // Compute a slow rotation over time.
+            float RotationAngle = FMath::Fmod((TimeInStep + i * 0.05f) * 30.0f, 360.0f);
+
+            // Apply these transformations to the actor's relative transform.
+            FTransform NewTransform = Actor->GetActorTransform();
+            NewTransform.SetScale3D(FVector(ScaleFactor));
+            NewTransform.SetRotation(FQuat(FRotator(0, RotationAngle, 0)));
+            Actor->SetActorTransform(NewTransform);
+        }
+    }
 }
 
 void ACellularAutomataManager::InitializeGrid()
@@ -114,7 +134,6 @@ void ACellularAutomataManager::InitializeGrid()
     CellGrid.Empty();
     CellGrid.SetNum(TotalCells);
 
-    // Initialize CellIntensity and CellActivationTime to 0 (all cells start dead)
     CellIntensity.Empty();
     CellIntensity.SetNum(TotalCells);
     CellActivationTime.Empty();
@@ -165,7 +184,7 @@ int32 ACellularAutomataManager::GetLiveNeighborCountForCell(int32 X, int32 Y) co
 
 void ACellularAutomataManager::UpdateSimulation()
 {
-    // Save the old grid state for checking new activations.
+    // Save the old grid state for new activation checking.
     TArray<int32> OldGrid = CellGrid;
 
     // 1. Update grid state using Conway's Game of Life rules.
