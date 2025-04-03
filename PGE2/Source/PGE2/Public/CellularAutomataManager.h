@@ -45,6 +45,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
     float TimeStepInterval;
 
+    // Default fade time (in seconds) used if no pattern-specific fade time is provided.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
+    float DefaultFadeTime;
+
     // Default mesh for an alive cell.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
     UStaticMesh* CellMesh;
@@ -85,9 +89,13 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
     TArray<class ACellPatternBase*> ActivePatternActors;
 
-    // New: Intensity for each cell (used to control opacity via dynamic material parameters).
+    // Intensity for each cell (used to control opacity via dynamic material parameters).
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
     TArray<float> CellIntensity;
+
+    // NEW: Per-cell activation times (records the time since a cell was activated).
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
+    TArray<float> CellActivationTime;
 
 protected:
     float TimeAccumulator;
