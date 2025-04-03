@@ -11,7 +11,9 @@ ACellularAutomataManager::ACellularAutomataManager()
     GridWidth = 50;
     GridHeight = 50;
     TimeStepInterval = 0.5f;
+    DefaultFadeTime = 1.0f; // For example
     TimeAccumulator = 0.0f;
+    TimeInStep = 0.0f;
 }
 
 void ACellularAutomataManager::BeginPlay()
@@ -36,40 +38,43 @@ void ACellularAutomataManager::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
     TimeAccumulator += DeltaTime;
+    TimeInStep += DeltaTime;
 
-    // Update per-cell activation times for all alive cells.
+    // Update per-cell activation time.
     for (int32 i = 0; i < CellGrid.Num(); i++)
     {
+        // If the cell is alive, accumulate activation time.
         if (CellGrid[i] == 1)
         {
-            // Increment the activation time for each alive cell.
             CellActivationTime[i] += DeltaTime;
         }
         else
         {
-            // Reset activation time for dead cells.
+            // For dead cells, reset activation time.
             CellActivationTime[i] = 0.0f;
         }
     }
 
-    // When the simulation step interval elapses, update the simulation.
+    // When simulation update is triggered, update the simulation.
     if (TimeAccumulator >= TimeStepInterval)
     {
+        // Save the old state so that newly activated cells can be reset.
+        TArray<int32> OldGrid = CellGrid;
         UpdateSimulation();
         TimeAccumulator = 0.0f;
-        // Reset activation times if you want new cells to start at full opacity.
-        // (Alternatively, you can let them continue to accumulate if that suits your design.)
+        // For cells that have just become alive, reset activation time to 0.
         for (int32 i = 0; i < CellGrid.Num(); i++)
         {
-            if (CellGrid[i] == 1)
+            if (CellGrid[i] == 1 && OldGrid[i] == 0)
             {
                 CellActivationTime[i] = 0.0f;
             }
         }
+        // Note: Do NOT reset TimeInStep, so that previous activation values continue to fade.
     }
     else
     {
-        // Update dynamic material opacity continuously.
+        // Additionally, update dynamic material opacity every frame for a smooth fade.
         for (int32 i = 0; i < CellGrid.Num(); i++)
         {
             if (!CellActors.IsValidIndex(i) || !CellActors[i])
@@ -77,7 +82,6 @@ void ACellularAutomataManager::Tick(float DeltaTime)
             if (CellGrid[i] == 1)
             {
                 float fadeTime = DefaultFadeTime;
-                // Check if a pattern covers this cell and use its FadeTime.
                 for (ACellPatternBase* Pattern : ActivePatternActors)
                 {
                     if (!Pattern)
@@ -90,7 +94,6 @@ void ACellularAutomataManager::Tick(float DeltaTime)
                         break;
                     }
                 }
-                // Compute the desired opacity based on the cell's activation time.
                 float DesiredOpacity = 1.0f - FMath::Clamp(CellActivationTime[i] / fadeTime, 0.0f, 1.0f);
                 CellIntensity[i] = DesiredOpacity;
                 AStaticMeshActor* Actor = CellActors[i];
@@ -111,7 +114,7 @@ void ACellularAutomataManager::InitializeGrid()
     CellGrid.Empty();
     CellGrid.SetNum(TotalCells);
 
-    // Initialize CellIntensity and CellActivationTime to 0.
+    // Initialize CellIntensity and CellActivationTime to 0 (all cells start dead)
     CellIntensity.Empty();
     CellIntensity.SetNum(TotalCells);
     CellActivationTime.Empty();
@@ -162,6 +165,9 @@ int32 ACellularAutomataManager::GetLiveNeighborCountForCell(int32 X, int32 Y) co
 
 void ACellularAutomataManager::UpdateSimulation()
 {
+    // Save the old grid state for checking new activations.
+    TArray<int32> OldGrid = CellGrid;
+
     // 1. Update grid state using Conway's Game of Life rules.
     TArray<int32> NewGrid = CellGrid;
     for (int32 y = 0; y < GridHeight; y++)
@@ -184,8 +190,7 @@ void ACellularAutomataManager::UpdateSimulation()
     }
     CellGrid = NewGrid;
 
-    // 2. Update CellIntensity at the simulation update moment.
-    // For each alive cell, compute its opacity decay using its activation time.
+    // 2. Update CellIntensity based on each cell's activation time.
     for (int32 i = 0; i < CellGrid.Num(); i++)
     {
         if (CellGrid[i] == 1)

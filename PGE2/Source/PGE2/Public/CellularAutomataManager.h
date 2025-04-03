@@ -93,12 +93,16 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
     TArray<float> CellIntensity;
 
-    // NEW: Per-cell activation times (records the time since a cell was activated).
+    // NEW: Per-cell activation time (records the time since a cell was activated).
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
     TArray<float> CellActivationTime;
 
 protected:
     float TimeAccumulator;
+
+    // Elapsed time within the current simulation step (for opacity fade).
+    // This is NOT reset at simulation update so that fade can extend beyond the simulation step.
+    float TimeInStep;
 
     // Helper: spawn a cell actor at grid coordinates (X, Y).
     void SpawnCell(int32 X, int32 Y, bool bIsAlive);
