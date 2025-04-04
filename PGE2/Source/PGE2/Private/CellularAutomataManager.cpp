@@ -14,10 +14,12 @@ ACellularAutomataManager::ACellularAutomataManager()
     DefaultFadeTime = 1.0f;
     TimeAccumulator = 0.0f;
     TimeInStep = 0.0f;
-
-    // Default options: enable both animations and fading.
     bEnableAnimations = true;
     bEnableFade = true;
+
+    // Initialize pointer members.
+    CellMesh = nullptr;
+    BaseCellMaterial = nullptr;
 }
 
 void ACellularAutomataManager::BeginPlay()
@@ -30,9 +32,10 @@ void ACellularAutomataManager::BeginPlay()
     {
         for (int32 i = 0; i < Info.InstanceCount; i++)
         {
+            // Spawn the pattern at the center of the chosen grid tile.
             int32 RandX = FMath::RandRange(0, GridWidth - 1);
             int32 RandY = FMath::RandRange(0, GridHeight - 1);
-            FVector PatternOrigin = GetActorLocation() + FVector(RandX * 100.0f, RandY * 100.0f, 0.0f);
+            FVector PatternOrigin = GetActorLocation() + FVector((RandX + 0.5f) * 100.0f, (RandY + 0.5f) * 100.0f, 0.0f);
             ApplyPattern(Info.PatternClass, PatternOrigin);
         }
     }
@@ -48,35 +51,27 @@ void ACellularAutomataManager::Tick(float DeltaTime)
     for (int32 i = 0; i < CellGrid.Num(); i++)
     {
         if (CellGrid[i] == 1)
-        {
             CellActivationTime[i] += DeltaTime;
-        }
         else
-        {
             CellActivationTime[i] = 0.0f;
-        }
     }
 
     if (TimeAccumulator >= TimeStepInterval)
     {
-        // Save the old state to detect newly activated cells.
+        // Save the old state to reset activation time for newly active cells.
         TArray<int32> OldGrid = CellGrid;
         UpdateSimulation();
         TimeAccumulator = 0.0f;
-        // For cells that just became alive, reset their activation time.
         for (int32 i = 0; i < CellGrid.Num(); i++)
         {
             if (CellGrid[i] == 1 && OldGrid[i] == 0)
-            {
                 CellActivationTime[i] = 0.0f;
-            }
         }
-        // Optionally, you could reset TimeInStep here if you want a synchronous restart.
-        // TimeInStep = 0.0f;
+        // Note: We do not reset TimeInStep so that previous activation values continue to influence fade.
     }
     else
     {
-        // Continuously update dynamic material opacity for a smooth fade.
+        // While between simulation updates, update opacity continuously if enabled.
         if (bEnableFade)
         {
             for (int32 i = 0; i < CellGrid.Num(); i++)
@@ -86,6 +81,7 @@ void ACellularAutomataManager::Tick(float DeltaTime)
                 if (CellGrid[i] == 1)
                 {
                     float fadeTime = DefaultFadeTime;
+                    // If a pattern covers this cell, use its fade time.
                     for (ACellPatternBase* Pattern : ActivePatternActors)
                     {
                         if (!Pattern)
@@ -112,7 +108,6 @@ void ACellularAutomataManager::Tick(float DeltaTime)
         }
         else
         {
-            // If fading is disabled, ensure opacity is 1.
             for (int32 i = 0; i < CellGrid.Num(); i++)
             {
                 if (!CellActors.IsValidIndex(i) || !CellActors[i])
@@ -132,26 +127,44 @@ void ACellularAutomataManager::Tick(float DeltaTime)
         }
     }
 
-    // Update 3D mesh transforms for creative effect if animations are enabled.
-    if (bEnableAnimations)
+    // Update each cell actor's transform so that it is centered on its grid tile.
+    for (int32 i = 0; i < CellActors.Num(); i++)
     {
-        for (int32 i = 0; i < CellGrid.Num(); i++)
-        {
-            if (!CellActors.IsValidIndex(i) || !CellActors[i])
-                continue;
-            AStaticMeshActor* Actor = CellActors[i];
-            if (CellGrid[i] == 1)
-            {
-                // Compute a pulsating scale based on TimeInStep and a unique offset (using the cell index).
-                float ScaleFactor = 1.0f + 0.2f * FMath::Sin((TimeInStep + i * 0.1f) * PI * 2.0f / DefaultFadeTime);
-                // Compute a slow rotation over time.
-                float RotationAngle = FMath::Fmod((TimeInStep + i * 0.05f) * 30.0f, 360.0f);
+        if (!CellActors.IsValidIndex(i) || !CellActors[i])
+            continue;
+        AStaticMeshActor* Actor = CellActors[i];
+        int32 X = i % GridWidth;
+        int32 Y = i / GridWidth;
+        // Center-of-cell: (X + 0.5, Y + 0.5) * 100.
+        FVector TargetLocation = GetActorLocation() + FVector((X + 0.5f) * 100.0f, (Y + 0.5f) * 100.0f, 0.0f);
+        FVector CurrentLocation = Actor->GetActorLocation();
+        float LerpSpeed = 5.0f;
+        FVector NewLocation = FMath::VInterpTo(CurrentLocation, TargetLocation, GetWorld()->DeltaTimeSeconds, LerpSpeed);
 
-                FTransform NewTransform = Actor->GetActorTransform();
-                NewTransform.SetScale3D(FVector(ScaleFactor));
-                NewTransform.SetRotation(FQuat(FRotator(0, RotationAngle, 0)));
-                Actor->SetActorTransform(NewTransform);
-            }
+        if (bEnableAnimations && CellGrid[i] == 1)
+        {
+            float ScaleFactor = 1.0f + 0.2f * FMath::Sin((TimeInStep + i * 0.1f) * PI * 2.0f / DefaultFadeTime);
+            float RotationAngle = FMath::Fmod((TimeInStep + i * 0.05f) * 30.0f, 360.0f);
+            FTransform CurrentTransform = Actor->GetActorTransform();
+            CurrentTransform.SetLocation(NewLocation);
+            CurrentTransform.SetScale3D(FVector(ScaleFactor));
+            CurrentTransform.SetRotation(FQuat(FRotator(0, RotationAngle, 0)));
+            Actor->SetActorTransform(CurrentTransform);
+        }
+        else
+        {
+            FTransform CurrentTransform = Actor->GetActorTransform();
+            CurrentTransform.SetLocation(NewLocation);
+            Actor->SetActorTransform(CurrentTransform);
+        }
+    }
+
+    // For each active pattern actor, re-create its 3D mesh instances to exactly match the active grid tiles.
+    for (ACellPatternBase* Pattern : ActivePatternActors)
+    {
+        if (Pattern)
+        {
+            Pattern->RefreshMeshInstances(this);
         }
     }
 }
@@ -212,7 +225,6 @@ int32 ACellularAutomataManager::GetLiveNeighborCountForCell(int32 X, int32 Y) co
 
 void ACellularAutomataManager::UpdateSimulation()
 {
-    // Save the old grid state for checking new activations.
     TArray<int32> OldGrid = CellGrid;
 
     // 1. Update grid state using Conway's Game of Life rules.
@@ -309,6 +321,15 @@ void ACellularAutomataManager::UpdateSimulation()
             }
         }
     }
+
+    // 4. For each active pattern actor, remove and re-spawn its mesh instances so that they match the active tiles.
+    for (ACellPatternBase* Pattern : ActivePatternActors)
+    {
+        if (Pattern)
+        {
+            Pattern->RefreshMeshInstances(this);
+        }
+    }
 }
 
 void ACellularAutomataManager::ApplyPattern(TSubclassOf<ACellPatternBase> PatternClass, FVector Origin)
@@ -326,7 +347,8 @@ void ACellularAutomataManager::ApplyPattern(TSubclassOf<ACellPatternBase> Patter
 
 void ACellularAutomataManager::SpawnCell(int32 X, int32 Y, bool bIsAlive)
 {
-    FVector Location = GetActorLocation() + FVector(X * 100.0f, Y * 100.0f, 0.0f);
+    // Spawn the cell actor at the center of the grid tile.
+    FVector Location = GetActorLocation() + FVector((X + 0.5f) * 100.0f, (Y + 0.5f) * 100.0f, 0.0f);
     FTransform Transform;
     Transform.SetLocation(Location);
 

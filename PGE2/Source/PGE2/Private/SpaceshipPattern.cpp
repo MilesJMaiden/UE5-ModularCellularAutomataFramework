@@ -3,7 +3,7 @@
 
 ASpaceshipPattern::ASpaceshipPattern()
 {
-    // Assign a PatternMesh in the editor
+    // Assign PatternMesh via the editor.
 }
 
 void ASpaceshipPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager)
@@ -13,10 +13,10 @@ void ASpaceshipPattern::ApplyPattern_Implementation(ACellularAutomataManager* Ma
 
     if (PatternMesh)
     {
-        MeshComponent->SetStaticMesh(PatternMesh);
+        this->MeshComponent->SetStaticMesh(PatternMesh);
     }
 
-    // Glider pattern offsets (e.g., moving diagonally)
+    // Define glider offsets.
     TArray<FIntPoint> LocalOffsets = {
         FIntPoint(1, 0),
         FIntPoint(2, 1),
@@ -25,10 +25,9 @@ void ASpaceshipPattern::ApplyPattern_Implementation(ACellularAutomataManager* Ma
         FIntPoint(2, 2)
     };
 
-    // Cache the affected tile indices
     ComputeSeededIndicesFromOffsets(Manager, LocalOffsets);
 
-    // Seed the grid with living cells at those indices
+    // Mark these grid cells as active.
     for (int32 Idx : SeededIndices)
     {
         if (Manager->CellGrid.IsValidIndex(Idx))
@@ -36,4 +35,7 @@ void ASpaceshipPattern::ApplyPattern_Implementation(ACellularAutomataManager* Ma
             Manager->CellGrid[Idx] = 1;
         }
     }
+
+    // Remove and re-spawn mesh instances for each seeded cell.
+    RefreshMeshInstances(Manager);
 }

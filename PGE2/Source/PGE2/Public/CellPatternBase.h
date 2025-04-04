@@ -8,7 +8,9 @@ class ACellularAutomataManager;
 
 /**
  * Abstract base class for cellular automata patterns.
- * Contains common visual properties and a mesh component.
+ * This class holds common visual properties and manages the 3D mesh instances for a pattern.
+ * Mesh instances are spawned (and later removed) so that at each simulation update
+ * the pattern’s 3D meshes match exactly the active grid tiles.
  */
 UCLASS(Abstract, Blueprintable)
 class PGE2_API ACellPatternBase : public AActor
@@ -24,6 +26,7 @@ public:
     virtual void ApplyPattern_Implementation(ACellularAutomataManager* Manager);
 
     // Returns the grid indices that this pattern has seeded.
+    UFUNCTION(BlueprintCallable, Category = "Cell Pattern")
     virtual TArray<int32> GetAffectedIndices(const ACellularAutomataManager* Manager) const;
 
     // The pattern's specific 3D mesh (assigned in the editor).
@@ -46,15 +49,34 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cell Pattern")
     UStaticMeshComponent* MeshComponent;
 
+    // Array of mesh components spawned for each active seeded grid cell.
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cell Pattern")
+    TArray<UStaticMeshComponent*> PatternMeshInstances;
+
+    // Refreshes the pattern’s mesh instances: deletes any existing ones and spawns new ones based on active grid cells.
+    UFUNCTION(BlueprintCallable, Category = "Cell Pattern")
+    void RefreshMeshInstances(const ACellularAutomataManager* Manager);
+
+    // Updates the positions of all mesh instances so that they are centered on their grid tiles.
+    UFUNCTION(BlueprintCallable, Category = "Cell Pattern")
+    void UpdateMeshPosition(const ACellularAutomataManager* Manager);
+
 protected:
-    // Cached indices where this pattern applied itself to the grid.
+    // Cached grid indices where this pattern is seeded.
     UPROPERTY()
     TArray<int32> SeededIndices;
 
     /**
-     * Utility for subclasses to populate SeededIndices from local (pattern) offsets.
-     * The LocalOffsets array should contain the (x,y) offsets (in grid units)
-     * from the pattern's computed grid origin.
+     * Utility for subclasses to populate SeededIndices from local offsets (in grid units)
+     * relative to the pattern’s computed grid origin.
      */
+    UFUNCTION(BlueprintCallable, Category = "Cell Pattern")
     void ComputeSeededIndicesFromOffsets(const ACellularAutomataManager* Manager, const TArray<FIntPoint>& LocalOffsets);
+
+    /**
+     * Spawns one mesh instance for each seeded grid cell (later filtered for active cells).
+     * Each instance is a new StaticMeshComponent attached to this actor.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Cell Pattern")
+    void SpawnPatternMeshInstances(const ACellularAutomataManager* Manager);
 };

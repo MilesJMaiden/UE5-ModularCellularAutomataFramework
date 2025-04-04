@@ -3,7 +3,7 @@
 
 AOscillatorPattern::AOscillatorPattern()
 {
-    // Oscillator pattern — assign PatternMesh in editor
+    // Assign PatternMesh via the editor.
 }
 
 void AOscillatorPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager)
@@ -13,19 +13,18 @@ void AOscillatorPattern::ApplyPattern_Implementation(ACellularAutomataManager* M
 
     if (PatternMesh)
     {
-        MeshComponent->SetStaticMesh(PatternMesh);
+        this->MeshComponent->SetStaticMesh(PatternMesh);
     }
 
-    // Define a horizontal blinker: {-1, 0}, {0, 0}, {1, 0}
+    // Define horizontal blinker offsets: (-1,0), (0,0), (1,0)
     TArray<FIntPoint> LocalOffsets;
     LocalOffsets.Add(FIntPoint(-1, 0));
     LocalOffsets.Add(FIntPoint(0, 0));
     LocalOffsets.Add(FIntPoint(1, 0));
 
-    // Populate SeededIndices
     ComputeSeededIndicesFromOffsets(Manager, LocalOffsets);
 
-    // Mark these cells alive
+    // Mark these grid cells as active.
     for (int32 Idx : SeededIndices)
     {
         if (Manager->CellGrid.IsValidIndex(Idx))
@@ -33,4 +32,7 @@ void AOscillatorPattern::ApplyPattern_Implementation(ACellularAutomataManager* M
             Manager->CellGrid[Idx] = 1;
         }
     }
+
+    // Remove and re-spawn mesh instances for each seeded cell.
+    RefreshMeshInstances(Manager);
 }

@@ -3,7 +3,7 @@
 
 AStillLifePattern::AStillLifePattern()
 {
-    // Assign PatternMesh via the editor
+    // Assign PatternMesh via the editor.
 }
 
 void AStillLifePattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager)
@@ -13,20 +13,20 @@ void AStillLifePattern::ApplyPattern_Implementation(ACellularAutomataManager* Ma
 
     if (PatternMesh)
     {
-        MeshComponent->SetStaticMesh(PatternMesh);
+        this->MeshComponent->SetStaticMesh(PatternMesh);
     }
 
-    // Define a 2x2 block: (0,0), (1,0), (0,1), (1,1)
+    // Define a 2x2 block pattern: offsets (0,0), (1,0), (0,1), (1,1).
     TArray<FIntPoint> LocalOffsets;
     LocalOffsets.Add(FIntPoint(0, 0));
     LocalOffsets.Add(FIntPoint(1, 0));
     LocalOffsets.Add(FIntPoint(0, 1));
     LocalOffsets.Add(FIntPoint(1, 1));
 
-    // Populate SeededIndices
+    // Compute seeded indices based on these offsets.
     ComputeSeededIndicesFromOffsets(Manager, LocalOffsets);
 
-    // Activate those cells in the manager's grid
+    // Mark the corresponding grid cells as active.
     for (int32 Idx : SeededIndices)
     {
         if (Manager->CellGrid.IsValidIndex(Idx))
@@ -34,4 +34,7 @@ void AStillLifePattern::ApplyPattern_Implementation(ACellularAutomataManager* Ma
             Manager->CellGrid[Idx] = 1;
         }
     }
+
+    // Remove any old mesh instances and re-spawn new ones exactly where the grid is active.
+    RefreshMeshInstances(Manager);
 }
