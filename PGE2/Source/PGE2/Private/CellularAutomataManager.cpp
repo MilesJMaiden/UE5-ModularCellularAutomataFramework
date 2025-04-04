@@ -14,6 +14,10 @@ ACellularAutomataManager::ACellularAutomataManager()
     DefaultFadeTime = 1.0f;
     TimeAccumulator = 0.0f;
     TimeInStep = 0.0f;
+
+    // Default options: enable both animations and fading.
+    bEnableAnimations = true;
+    bEnableFade = true;
 }
 
 void ACellularAutomataManager::BeginPlay()
@@ -55,11 +59,11 @@ void ACellularAutomataManager::Tick(float DeltaTime)
 
     if (TimeAccumulator >= TimeStepInterval)
     {
-        // Save old state for new activation checking.
+        // Save the old state to detect newly activated cells.
         TArray<int32> OldGrid = CellGrid;
         UpdateSimulation();
         TimeAccumulator = 0.0f;
-        // For cells that just became alive, reset activation time.
+        // For cells that just became alive, reset their activation time.
         for (int32 i = 0; i < CellGrid.Num(); i++)
         {
             if (CellGrid[i] == 1 && OldGrid[i] == 0)
@@ -67,63 +71,87 @@ void ACellularAutomataManager::Tick(float DeltaTime)
                 CellActivationTime[i] = 0.0f;
             }
         }
-        // Optionally, reset TimeInStep if you want the entire grid to reanimate synchronously.
+        // Optionally, you could reset TimeInStep here if you want a synchronous restart.
         // TimeInStep = 0.0f;
     }
     else
     {
-        // Continuously update the opacity of each cell for a smooth fade.
-        for (int32 i = 0; i < CellGrid.Num(); i++)
+        // Continuously update dynamic material opacity for a smooth fade.
+        if (bEnableFade)
         {
-            if (!CellActors.IsValidIndex(i) || !CellActors[i])
-                continue;
-            if (CellGrid[i] == 1)
+            for (int32 i = 0; i < CellGrid.Num(); i++)
             {
-                float fadeTime = DefaultFadeTime;
-                for (ACellPatternBase* Pattern : ActivePatternActors)
+                if (!CellActors.IsValidIndex(i) || !CellActors[i])
+                    continue;
+                if (CellGrid[i] == 1)
                 {
-                    if (!Pattern)
-                        continue;
-                    TArray<int32> AffectedIndices = Pattern->GetAffectedIndices(this);
-                    if (AffectedIndices.Contains(i))
+                    float fadeTime = DefaultFadeTime;
+                    for (ACellPatternBase* Pattern : ActivePatternActors)
                     {
-                        if (Pattern->FadeTime > 0.0f)
-                            fadeTime = Pattern->FadeTime;
-                        break;
+                        if (!Pattern)
+                            continue;
+                        TArray<int32> AffectedIndices = Pattern->GetAffectedIndices(this);
+                        if (AffectedIndices.Contains(i))
+                        {
+                            if (Pattern->FadeTime > 0.0f)
+                                fadeTime = Pattern->FadeTime;
+                            break;
+                        }
+                    }
+                    float DesiredOpacity = 1.0f - FMath::Clamp(CellActivationTime[i] / fadeTime, 0.0f, 1.0f);
+                    CellIntensity[i] = DesiredOpacity;
+                    AStaticMeshActor* Actor = CellActors[i];
+                    UStaticMeshComponent* MeshComp = Actor->GetStaticMeshComponent();
+                    UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(MeshComp->GetMaterial(0));
+                    if (DynMat)
+                    {
+                        DynMat->SetScalarParameterValue(FName("Opacity"), DesiredOpacity);
                     }
                 }
-                float DesiredOpacity = 1.0f - FMath::Clamp(CellActivationTime[i] / fadeTime, 0.0f, 1.0f);
-                CellIntensity[i] = DesiredOpacity;
-                AStaticMeshActor* Actor = CellActors[i];
-                UStaticMeshComponent* MeshComp = Actor->GetStaticMeshComponent();
-                UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(MeshComp->GetMaterial(0));
-                if (DynMat)
+            }
+        }
+        else
+        {
+            // If fading is disabled, ensure opacity is 1.
+            for (int32 i = 0; i < CellGrid.Num(); i++)
+            {
+                if (!CellActors.IsValidIndex(i) || !CellActors[i])
+                    continue;
+                if (CellGrid[i] == 1)
                 {
-                    DynMat->SetScalarParameterValue(FName("Opacity"), DesiredOpacity);
+                    CellIntensity[i] = 1.0f;
+                    AStaticMeshActor* Actor = CellActors[i];
+                    UStaticMeshComponent* MeshComp = Actor->GetStaticMeshComponent();
+                    UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(MeshComp->GetMaterial(0));
+                    if (DynMat)
+                    {
+                        DynMat->SetScalarParameterValue(FName("Opacity"), 1.0f);
+                    }
                 }
             }
         }
     }
 
-    // In all cases, update the 3D mesh transforms for a creative effect.
-    // For each alive cell, we apply a pulsating scale and a slow rotation.
-    for (int32 i = 0; i < CellGrid.Num(); i++)
+    // Update 3D mesh transforms for creative effect if animations are enabled.
+    if (bEnableAnimations)
     {
-        if (!CellActors.IsValidIndex(i) || !CellActors[i])
-            continue;
-        AStaticMeshActor* Actor = CellActors[i];
-        if (CellGrid[i] == 1)
+        for (int32 i = 0; i < CellGrid.Num(); i++)
         {
-            // Compute a pulsating scale based on TimeInStep and a unique offset (using the cell index).
-            float ScaleFactor = 1.0f + 0.2f * FMath::Sin((TimeInStep + i * 0.1f) * PI * 2.0f / DefaultFadeTime);
-            // Compute a slow rotation over time.
-            float RotationAngle = FMath::Fmod((TimeInStep + i * 0.05f) * 30.0f, 360.0f);
+            if (!CellActors.IsValidIndex(i) || !CellActors[i])
+                continue;
+            AStaticMeshActor* Actor = CellActors[i];
+            if (CellGrid[i] == 1)
+            {
+                // Compute a pulsating scale based on TimeInStep and a unique offset (using the cell index).
+                float ScaleFactor = 1.0f + 0.2f * FMath::Sin((TimeInStep + i * 0.1f) * PI * 2.0f / DefaultFadeTime);
+                // Compute a slow rotation over time.
+                float RotationAngle = FMath::Fmod((TimeInStep + i * 0.05f) * 30.0f, 360.0f);
 
-            // Apply these transformations to the actor's relative transform.
-            FTransform NewTransform = Actor->GetActorTransform();
-            NewTransform.SetScale3D(FVector(ScaleFactor));
-            NewTransform.SetRotation(FQuat(FRotator(0, RotationAngle, 0)));
-            Actor->SetActorTransform(NewTransform);
+                FTransform NewTransform = Actor->GetActorTransform();
+                NewTransform.SetScale3D(FVector(ScaleFactor));
+                NewTransform.SetRotation(FQuat(FRotator(0, RotationAngle, 0)));
+                Actor->SetActorTransform(NewTransform);
+            }
         }
     }
 }
@@ -184,7 +212,7 @@ int32 ACellularAutomataManager::GetLiveNeighborCountForCell(int32 X, int32 Y) co
 
 void ACellularAutomataManager::UpdateSimulation()
 {
-    // Save the old grid state for new activation checking.
+    // Save the old grid state for checking new activations.
     TArray<int32> OldGrid = CellGrid;
 
     // 1. Update grid state using Conway's Game of Life rules.

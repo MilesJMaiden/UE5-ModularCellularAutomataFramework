@@ -93,15 +93,24 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
     TArray<float> CellIntensity;
 
-    // NEW: Per-cell activation time (records the time since a cell was activated).
+    // Per-cell activation time (records the time since a cell was activated).
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
     TArray<float> CellActivationTime;
+
+    // --- New Boolean Options ---
+    // Toggle for 3D mesh animations (rotation & pulsation).
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Effects")
+    bool bEnableAnimations;
+
+    // Toggle for opacity fading. When disabled, all alive cells remain fully opaque.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Effects")
+    bool bEnableFade;
 
 protected:
     float TimeAccumulator;
 
     // Elapsed time within the current simulation step (for opacity fade).
-    // This is NOT reset at simulation update so that fade can extend beyond the simulation step.
+    // Not reset at simulation update so that fade can extend beyond the simulation step.
     float TimeInStep;
 
     // Helper: spawn a cell actor at grid coordinates (X, Y).
