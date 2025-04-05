@@ -2,18 +2,18 @@
 
 #include "CoreMinimal.h"
 #include "CellPatternBase.h"
-#include "StillLifePattern.generated.h"
+#include "GliderPattern.generated.h"
 
 /**
- * Represents a Still Life pattern (e.g., a 2x2 block).
+ * Represents a glider Spaceship pattern.
  */
 UCLASS(Blueprintable)
-class PGE2_API AStillLifePattern : public ACellPatternBase
+class PGE2_API AGliderPattern : public ACellPatternBase
 {
     GENERATED_BODY()
 
 public:
-    AStillLifePattern();
+    AGliderPattern();
 
     virtual void ApplyPattern_Implementation(ACellularAutomataManager* Manager) override;
 };

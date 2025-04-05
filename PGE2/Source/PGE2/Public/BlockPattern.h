@@ -2,18 +2,18 @@
 
 #include "CoreMinimal.h"
 #include "CellPatternBase.h"
-#include "OscillatorPattern.generated.h"
+#include "BlockPattern.generated.h"
 
 /**
- * Represents an Oscillator pattern (e.g., a horizontal blinker).
+ * Represents a block Still Life pattern.
  */
 UCLASS(Blueprintable)
-class PGE2_API AOscillatorPattern : public ACellPatternBase
+class PGE2_API ABlockPattern : public ACellPatternBase
 {
     GENERATED_BODY()
 
 public:
-    AOscillatorPattern();
+    ABlockPattern();
 
     virtual void ApplyPattern_Implementation(ACellularAutomataManager* Manager) override;
 };

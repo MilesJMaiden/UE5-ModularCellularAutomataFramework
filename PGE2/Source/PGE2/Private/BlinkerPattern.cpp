@@ -1,12 +1,12 @@
-#include "SpaceshipPattern.h"
+#include "BlinkerPattern.h"
 #include "CellularAutomataManager.h"
 
-ASpaceshipPattern::ASpaceshipPattern()
+ABlinkerPattern::ABlinkerPattern()
 {
     // Assign PatternMesh via the editor.
 }
 
-void ASpaceshipPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager)
+void ABlinkerPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager)
 {
     if (!Manager)
         return;
@@ -16,14 +16,11 @@ void ASpaceshipPattern::ApplyPattern_Implementation(ACellularAutomataManager* Ma
         this->MeshComponent->SetStaticMesh(PatternMesh);
     }
 
-    // Define glider offsets.
-    TArray<FIntPoint> LocalOffsets = {
-        FIntPoint(1, 0),
-        FIntPoint(2, 1),
-        FIntPoint(0, 2),
-        FIntPoint(1, 2),
-        FIntPoint(2, 2)
-    };
+    // Define horizontal blinker offsets: (-1,0), (0,0), (1,0)
+    TArray<FIntPoint> LocalOffsets;
+    LocalOffsets.Add(FIntPoint(-1, 0));
+    LocalOffsets.Add(FIntPoint(0, 0));
+    LocalOffsets.Add(FIntPoint(1, 0));
 
     ComputeSeededIndicesFromOffsets(Manager, LocalOffsets);
 

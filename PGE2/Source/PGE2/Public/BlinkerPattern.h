@@ -2,18 +2,18 @@
 
 #include "CoreMinimal.h"
 #include "CellPatternBase.h"
-#include "SpaceshipPattern.generated.h"
+#include "BlinkerPattern.generated.h"
 
 /**
- * Represents a Spaceship pattern (e.g., a glider).
+ * Represents an Blinker pattern.
  */
 UCLASS(Blueprintable)
-class PGE2_API ASpaceshipPattern : public ACellPatternBase
+class PGE2_API ABlinkerPattern : public ACellPatternBase
 {
     GENERATED_BODY()
 
 public:
-    ASpaceshipPattern();
+    ABlinkerPattern();
 
     virtual void ApplyPattern_Implementation(ACellularAutomataManager* Manager) override;
 };

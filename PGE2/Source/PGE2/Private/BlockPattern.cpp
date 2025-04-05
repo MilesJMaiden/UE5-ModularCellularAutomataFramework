@@ -1,12 +1,12 @@
-#include "StillLifePattern.h"
+#include "BlockPattern.h"
 #include "CellularAutomataManager.h"
 
-AStillLifePattern::AStillLifePattern()
+ABlockPattern::ABlockPattern()
 {
     // Assign PatternMesh via the editor.
 }
 
-void AStillLifePattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager)
+void ABlockPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager)
 {
     if (!Manager)
         return;

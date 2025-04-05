@@ -1,12 +1,12 @@
-#include "OscillatorPattern.h"
+#include "GliderPattern.h"
 #include "CellularAutomataManager.h"
 
-AOscillatorPattern::AOscillatorPattern()
+AGliderPattern::AGliderPattern()
 {
     // Assign PatternMesh via the editor.
 }
 
-void AOscillatorPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager)
+void AGliderPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager)
 {
     if (!Manager)
         return;
@@ -16,11 +16,14 @@ void AOscillatorPattern::ApplyPattern_Implementation(ACellularAutomataManager* M
         this->MeshComponent->SetStaticMesh(PatternMesh);
     }
 
-    // Define horizontal blinker offsets: (-1,0), (0,0), (1,0)
-    TArray<FIntPoint> LocalOffsets;
-    LocalOffsets.Add(FIntPoint(-1, 0));
-    LocalOffsets.Add(FIntPoint(0, 0));
-    LocalOffsets.Add(FIntPoint(1, 0));
+    // Define glider offsets.
+    TArray<FIntPoint> LocalOffsets = {
+        FIntPoint(1, 0),
+        FIntPoint(2, 1),
+        FIntPoint(0, 2),
+        FIntPoint(1, 2),
+        FIntPoint(2, 2)
+    };
 
     ComputeSeededIndicesFromOffsets(Manager, LocalOffsets);
 
