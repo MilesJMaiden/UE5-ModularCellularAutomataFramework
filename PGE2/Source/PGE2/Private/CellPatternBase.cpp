@@ -34,7 +34,6 @@ void ACellPatternBase::ComputeSeededIndicesFromOffsets(const ACellularAutomataMa
     if (!Manager)
         return;
 
-    // Compute grid coordinates from the pattern actor’s world location relative to the manager’s origin.
     FVector Origin = GetActorLocation();
     int32 GridX = FMath::FloorToInt((Origin.X - Manager->GetActorLocation().X) / 100.0f);
     int32 GridY = FMath::FloorToInt((Origin.Y - Manager->GetActorLocation().Y) / 100.0f);
@@ -47,10 +46,11 @@ void ACellPatternBase::ComputeSeededIndicesFromOffsets(const ACellularAutomataMa
         if (X >= 0 && X < Manager->GridWidth && Y >= 0 && Y < Manager->GridHeight)
         {
             int32 Index = Y * Manager->GridWidth + X;
-            SeededIndices.Add(Index);
+            SeededIndices.AddUnique(Index); // Prevent duplicates.
         }
     }
 }
+
 
 void ACellPatternBase::SpawnPatternMeshInstances(const ACellularAutomataManager* Manager)
 {

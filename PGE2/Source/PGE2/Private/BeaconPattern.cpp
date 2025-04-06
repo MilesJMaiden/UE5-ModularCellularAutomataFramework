@@ -15,6 +15,7 @@ void ABeaconPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manag
     {
         MeshComponent->SetStaticMesh(PatternMesh);
     }
+    MeshComponent->SetVisibility(false); // Hide the root mesh.
 
     // Beacon oscillator offsets:
     // One common layout: two 2x2 blocks separated by a gap.

@@ -15,6 +15,7 @@ void AMWSSPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager
     {
         MeshComponent->SetStaticMesh(PatternMesh);
     }
+    MeshComponent->SetVisibility(false); // Hide the root mesh.
 
     // Middleweight spaceship (MWSS) offsets (10 cells):
     // One possible layout:

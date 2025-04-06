@@ -15,6 +15,7 @@ void ABlockPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manage
     {
         this->MeshComponent->SetStaticMesh(PatternMesh);
     }
+    MeshComponent->SetVisibility(false); // Hide the root mesh.
 
     // Define a 2x2 block pattern: offsets (0,0), (1,0), (0,1), (1,1).
     TArray<FIntPoint> LocalOffsets;

@@ -15,6 +15,7 @@ void AGliderPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manag
     {
         this->MeshComponent->SetStaticMesh(PatternMesh);
     }
+    MeshComponent->SetVisibility(false); // Hide the root mesh.
 
     // Define glider offsets.
     TArray<FIntPoint> LocalOffsets = {

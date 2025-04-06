@@ -15,6 +15,7 @@ void ALoafPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager
     {
         MeshComponent->SetStaticMesh(PatternMesh);
     }
+    MeshComponent->SetVisibility(false);
 
     // Loaf pattern (still life) offsets:
     // Common layout: (1,0), (2,0), (0,1), (3,1), (1,2), (3,2), (2,3)

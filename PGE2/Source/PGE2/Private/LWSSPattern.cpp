@@ -15,6 +15,7 @@ void ALWSSPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager
     {
         MeshComponent->SetStaticMesh(PatternMesh);
     }
+    MeshComponent->SetVisibility(false); // Hide the root mesh.
 
     // Lightweight spaceship (LWSS) offsets (9 cells):
     // One common layout:
