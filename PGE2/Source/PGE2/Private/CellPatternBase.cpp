@@ -97,36 +97,43 @@ void ACellPatternBase::SpawnPatternMeshInstances(const ACellularAutomataManager*
 
 void ACellPatternBase::UpdateMeshPosition(const ACellularAutomataManager* Manager)
 {
-    if (!Manager)
-        return;
-
-    // Get active seeded indices (only for cells that are active).
-    TArray<int32> ActiveSeededIndices;
-    for (int32 Index : SeededIndices)
+    if (!Manager || SeededIndices.Num() == 0)
     {
-        if (Manager->CellGrid.IsValidIndex(Index) && Manager->CellGrid[Index] == 1)
-        {
-            ActiveSeededIndices.Add(Index);
-        }
+        return;
     }
 
-    // For each active seeded index, update the corresponding mesh instance’s location.
+    // Assume grid cell spacing is 100 units.
     const float Spacing = 100.0f;
     FVector ManagerOrigin = Manager->GetActorLocation();
-    for (int32 i = 0; i < ActiveSeededIndices.Num(); i++)
+
+    // Determine upward offset: half the mesh's height.
+    float ZOffset = 0.0f;
+    if (PatternMesh)
     {
-        int32 Index = ActiveSeededIndices[i];
+        FBoxSphereBounds MeshBounds = PatternMesh->GetBounds();
+        // BoxExtent.Z is half the mesh's size in Z.
+        ZOffset = MeshBounds.BoxExtent.Z;
+    }
+
+    // For each seeded index (active grid cell), update the corresponding mesh instance's location.
+    for (int32 i = 0; i < SeededIndices.Num(); i++)
+    {
+        int32 Index = SeededIndices[i];
         int32 GridX = Index % Manager->GridWidth;
         int32 GridY = Index / Manager->GridWidth;
-        // Center of cell: add 0.5 * Spacing.
+        // Compute center-of-cell location.
         FVector NewLocation = ManagerOrigin + FVector((GridX + 0.5f) * Spacing, (GridY + 0.5f) * Spacing, 0.0f);
+        // Move the mesh upward by half its Z–size.
+        NewLocation.Z += ZOffset;
+
         if (PatternMeshInstances.IsValidIndex(i) && PatternMeshInstances[i])
         {
-            // Set world location directly (or interpolate if smooth transition is desired).
+            // Optionally, you could interpolate for a smooth transition.
             PatternMeshInstances[i]->SetWorldLocation(NewLocation);
         }
     }
 }
+
 
 void ACellPatternBase::RefreshMeshInstances(const ACellularAutomataManager* Manager)
 {
