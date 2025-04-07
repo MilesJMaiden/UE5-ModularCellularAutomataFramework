@@ -18,7 +18,6 @@ void AToadPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager
     MeshComponent->SetVisibility(false); // Hide the root mesh.
 
     // Toad oscillator offsets:
-    // One common layout: (1,0), (2,0), (3,0), (0,1), (1,1), (2,1)
     TArray<FIntPoint> LocalOffsets;
     LocalOffsets.Add(FIntPoint(1, 0));
     LocalOffsets.Add(FIntPoint(2, 0));

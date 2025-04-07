@@ -18,11 +18,6 @@ void ALWSSPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager
     MeshComponent->SetVisibility(false); // Hide the root mesh.
 
     // Lightweight spaceship (LWSS) offsets (9 cells):
-    // One common layout:
-    // Row0: (1,0), (2,0), (3,0), (4,0)
-    // Row1: (0,1), (4,1)
-    // Row2: (4,2)
-    // Row3: (0,3), (3,3)
     TArray<FIntPoint> LocalOffsets;
     LocalOffsets.Add(FIntPoint(1, 0));
     LocalOffsets.Add(FIntPoint(2, 0));

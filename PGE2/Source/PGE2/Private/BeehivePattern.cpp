@@ -3,7 +3,6 @@
 
 ABeehivePattern::ABeehivePattern()
 {
-    // Optionally, hide the actor’s root MeshComponent so that only the spawned instances are visible.
     MeshComponent->SetVisibility(false);
 }
 
@@ -20,7 +19,6 @@ void ABeehivePattern::ApplyPattern_Implementation(ACellularAutomataManager* Mana
     MeshComponent->SetVisibility(false); // Hide the root mesh.
 
     // Beehive (still life) offsets:
-    // Common layout: (1,0), (2,0), (0,1), (3,1), (1,2), (2,2)
     TArray<FIntPoint> LocalOffsets;
     LocalOffsets.Add(FIntPoint(1, 0));
     LocalOffsets.Add(FIntPoint(2, 0));

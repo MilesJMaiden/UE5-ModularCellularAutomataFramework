@@ -128,7 +128,6 @@ void ACellPatternBase::UpdateMeshPosition(const ACellularAutomataManager* Manage
 
         if (PatternMeshInstances.IsValidIndex(i) && PatternMeshInstances[i])
         {
-            // Optionally, you could interpolate for a smooth transition.
             PatternMeshInstances[i]->SetWorldLocation(NewLocation);
         }
     }

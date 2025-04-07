@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Engine/StaticMeshActor.h" // Full definition for AStaticMeshActor
+#include "Engine/StaticMeshActor.h"
 #include "CellularAutomataManager.generated.h"
 
 /**
@@ -53,7 +53,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
     UStaticMesh* CellMesh;
 
-    // (Optional) Base material for cell actors (should use parameters "BaseColor" and "Opacity").
+    //Base material for cell actors (should use parameters "BaseColor" and "Opacity").
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cellular Automata")
     UMaterialInterface* BaseCellMaterial;
 
@@ -97,7 +97,6 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cellular Automata")
     TArray<float> CellActivationTime;
 
-    // --- New Boolean Options ---
     // Toggle for 3D mesh animations (rotation & pulsation).
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Effects")
     bool bEnableAnimations;

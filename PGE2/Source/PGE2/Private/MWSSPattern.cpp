@@ -19,11 +19,6 @@ void AMWSSPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manager
     MeshComponent->SetVisibility(false);
 
     // Middleweight Spaceship (MWSS) offsets (5 rows, 10 total cells):
-    // Row 0: (2,0), (3,0), (4,0), (5,0)
-    // Row 1: (1,1), (5,1)
-    // Row 2: (5,2)
-    // Row 3: (1,3), (4,3)
-    // Row 4: (2,4)
     TArray<FIntPoint> LocalOffsets;
     LocalOffsets.Add(FIntPoint(1, 0));
     LocalOffsets.Add(FIntPoint(2, 0));

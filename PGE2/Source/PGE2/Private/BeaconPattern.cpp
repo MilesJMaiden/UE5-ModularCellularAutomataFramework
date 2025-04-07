@@ -18,9 +18,6 @@ void ABeaconPattern::ApplyPattern_Implementation(ACellularAutomataManager* Manag
     MeshComponent->SetVisibility(false); // Hide the root mesh.
 
     // Beacon oscillator offsets:
-    // One common layout: two 2x2 blocks separated by a gap.
-    // Top block: (0,0), (1,0), (0,1), (1,1)
-    // Bottom block: (2,2), (3,2), (2,3), (3,3)
     TArray<FIntPoint> LocalOffsets;
     LocalOffsets.Add(FIntPoint(0, 0));
     LocalOffsets.Add(FIntPoint(1, 0));

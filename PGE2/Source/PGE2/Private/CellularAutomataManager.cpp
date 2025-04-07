@@ -17,7 +17,6 @@ ACellularAutomataManager::ACellularAutomataManager()
     bEnableAnimations = true;
     bEnableFade = true;
 
-    // Initialize pointer members.
     CellMesh = nullptr;
     BaseCellMaterial = nullptr;
 }
@@ -67,7 +66,6 @@ void ACellularAutomataManager::Tick(float DeltaTime)
             if (CellGrid[i] == 1 && OldGrid[i] == 0)
                 CellActivationTime[i] = 0.0f;
         }
-        // Note: We do not reset TimeInStep so that previous activation values continue to influence fade.
     }
     else
     {

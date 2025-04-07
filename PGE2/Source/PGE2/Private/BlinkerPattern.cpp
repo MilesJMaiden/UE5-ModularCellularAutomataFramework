@@ -17,7 +17,6 @@ void ABlinkerPattern::ApplyPattern_Implementation(ACellularAutomataManager* Mana
     }
     MeshComponent->SetVisibility(false); // Hide the root mesh.
 
-    // Define horizontal blinker offsets: (-1,0), (0,0), (1,0)
     TArray<FIntPoint> LocalOffsets;
     LocalOffsets.Add(FIntPoint(-1, 0));
     LocalOffsets.Add(FIntPoint(0, 0));
